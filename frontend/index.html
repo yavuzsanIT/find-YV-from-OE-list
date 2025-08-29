@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Excel Processing Portal</title>
+  <link rel="stylesheet" href="./src/index.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo">XB</div>
+      <div class="title">
+        <h1>Excel Processing Portal</h1>
+        <p>Upload OE / Cross-Code Excel → Process → Download Result</p>
+      </div>
+    </div>
+    <div class="env">
+      <label>API</label>
+      <code id="apiLabel"></code>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Upload your Excel file</h2>
+      <p class="muted">Supported: .xlsx, .xls, .csv</p>
+
+      <!-- Drag & Drop Area -->
+      <div id="dropzone" class="dropzone" tabindex="0" aria-label="File dropzone">
+        <div class="dz-inner">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v4h16v-4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <div>
+            <strong>Drag & drop</strong> your Excel here
+            <div class="muted">or</div>
+          </div>
+          <button id="browseBtn" class="btn btn-primary" type="button">Browse file</button>
+          <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" hidden />
+        </div>
+      </div>
+
+      <!-- File Summary -->
+      <div id="fileInfo" class="file-info hidden">
+        <div>
+          <span class="badge">Selected</span>
+          <strong id="fileName">—</strong>
+          <span id="fileSize" class="muted"></span>
+        </div>
+        <button id="clearBtn" class="btn btn-ghost" type="button">Clear</button>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button id="uploadBtn" class="btn btn-primary" disabled>Upload & Process</button>
+        <button id="downloadBtn" class="btn btn-success" disabled>Download Result</button>
+      </div>
+
+      <!-- Progress -->
+      <div id="progressWrap" class="progress-wrap hidden" aria-live="polite">
+        <div class="progress-label" id="progressLabel">Preparing…</div>
+        <progress id="progressBar" max="100" value="0">0%</progress>
+      </div>
+
+      <!-- Alerts -->
+      <div id="alert" class="alert hidden" role="alert"></div>
+    </section>
+
+    <section class="card secondary">
+      <h3>How it works</h3>
+      <ol>
+        <li>Select or drop your Excel file with OE numbers or cross codes.</li>
+        <li>We upload securely and process it on the server.</li>
+        <li>A new Excel is generated—click <em>Download Result</em>.</li>
+      </ol>
+      <p class="muted small">
+        Processing is handled by the server-side TypeScript logic (<code>excelService.processExcel()</code>).
+      </p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>© 2025 XBrake • Internal Tool</span>
+  </footer>
+
+  <script>
+    // ---------- Config ----------
+    const defaultApi = "http://localhost:5000/api";
+    const url = new URL(window.location.href);
+    const API_URL = url.searchParams.get("api") || defaultApi;
+    document.getElementById("apiLabel").textContent = API_URL;
+
+    // ---------- Elements ----------
+    const dropzone   = document.getElementById("dropzone");
+    const fileInput  = document.getElementById("fileInput");
+    const browseBtn  = document.getElementById("browseBtn");
+    const uploadBtn  = document.getElementById("uploadBtn");
+    const downloadBtn= document.getElementById("downloadBtn");
+    const clearBtn   = document.getElementById("clearBtn");
+    const fileInfo   = document.getElementById("fileInfo");
+    const fileNameEl = document.getElementById("fileName");
+    const fileSizeEl = document.getElementById("fileSize");
+    const alertBox   = document.getElementById("alert");
+    const progressWrap = document.getElementById("progressWrap");
+    const progressBar  = document.getElementById("progressBar");
+    const progressLabel= document.getElementById("progressLabel");
+
+    // ---------- State ----------
+    let selectedFile = null;
+    let resultFilename = null;
+
+    // ---------- Helpers ----------
+    const showAlert = (msg, type = "info") => {
+      alertBox.textContent = msg;
+      alertBox.className = "alert " + type;
+      alertBox.classList.remove("hidden");
+    };
+    const hideAlert = () => alertBox.classList.add("hidden");
+
+    const formatBytes = bytes => {
+      if (!bytes && bytes !== 0) return "";
+      const sizes = ["B","KB","MB","GB"];
+      const i = Math.floor(Math.log(bytes)/Math.log(1024));
+      return (bytes/Math.pow(1024,i)).toFixed(1) + " " + sizes[i];
+    };
+
+    const setFile = (file) => {
+      selectedFile = file;
+      if (file) {
+        fileNameEl.textContent = file.name;
+        fileSizeEl.textContent = "• " + formatBytes(file.size);
+        fileInfo.classList.remove("hidden");
+        uploadBtn.disabled = false;
+        downloadBtn.disabled = true;
+        resultFilename = null;
+      } else {
+        fileInfo.classList.add("hidden");
+        uploadBtn.disabled = true;
+      }
+    };
+
+    const setProgress = (val, label) => {
+      progressWrap.classList.remove("hidden");
+      progressBar.value = val;
+      progressBar.textContent = val + "%";
+      progressLabel.textContent = label || (val + "%");
+    };
+
+    const resetProgress = () => {
+      progressWrap.classList.add("hidden");
+      progressBar.value = 0;
+      progressLabel.textContent = "Preparing…";
+    };
+
+    // ---------- DnD ----------
+    ["dragenter","dragover"].forEach(evt =>
+      dropzone.addEventListener(evt, e => {
+        e.preventDefault(); e.stopPropagation();
+        dropzone.classList.add("is-drag");
+      })
+    );
+    ["dragleave","drop"].forEach(evt =>
+      dropzone.addEventListener(evt, e => {
+        e.preventDefault(); e.stopPropagation();
+        dropzone.classList.remove("is-drag");
+      })
+    );
+    dropzone.addEventListener("drop", e => {
+      const f = e.dataTransfer?.files?.[0];
+      if (f) setFile(f);
+    });
+
+    // ---------- Browse ----------
+    browseBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", e => {
+      const f = e.target.files?.[0];
+      if (f) setFile(f);
+    });
+
+    // ---------- Clear ----------
+    clearBtn.addEventListener("click", () => {
+      fileInput.value = "";
+      setFile(null);
+      hideAlert();
+      resetProgress();
+    });
+
+    // ---------- Upload ----------
+    uploadBtn.addEventListener("click", async () => {
+      hideAlert();
+      if (!selectedFile) return;
+
+      try {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        // simple staged progress (fetch doesn't give upload progress natively)
+        setProgress(20, "Uploading…");
+
+        const res = await fetch(`${API_URL}/upload`, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || "Upload failed");
+        }
+
+        setProgress(70, "Processing on server…");
+
+        const data = await res.json(); // { filename: "results_XXXX.xlsx" }
+        if (!data?.filename) throw new Error("Invalid response");
+
+        resultFilename = data.filename;
+        setProgress(100, "Completed");
+        showAlert("File processed successfully.", "success");
+        downloadBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+        showAlert(err.message || "Unexpected error", "error");
+        resetProgress();
+      }
+    });
+
+    // ---------- Download ----------
+    downloadBtn.addEventListener("click", async () => {
+      if (!resultFilename) return;
+      // simplest: navigate to download endpoint
+      window.location.href = `${API_URL}/download/${encodeURIComponent(resultFilename)}`;
+    });
+  </script>
+</body>
+</html>
