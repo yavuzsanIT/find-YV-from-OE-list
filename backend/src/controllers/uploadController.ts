@@ -8,18 +8,16 @@ const handleUpload = async (req: Request, res: Response) => {
     }
     
     const { keywords } = req.body as { keywords: string };
-    // searchColumn artık frontend'den gelmiyor, sabit bir değer kullanıyoruz.
-    const searchColumn = 'OE';
 
     if (!keywords || keywords.trim() === '') {
       return res.status(400).json({ error: 'Arama kelimeleri eksik.' });
     }
 
-    const keywordList = keywords.split(',');
+    const keywordList = keywords.split(',').map(k => k.trim()).filter(k => k.length >= 2);
 
     const uploadedPath = req.file.path;
 
-    const newFilename = await excelService.processExcel(uploadedPath, searchColumn, keywordList);
+    const newFilename = await excelService.processExcel(uploadedPath, keywordList);
 
     res.json({ filename: newFilename });
   } catch (error: any) {
