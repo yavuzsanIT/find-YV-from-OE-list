@@ -37,7 +37,9 @@ export async function processExcel(
         // 4. Sonuçları Excel'e dönüştürme ve kaydetme
         const newFilename = `results_${Date.now()}.xlsx`;
         const destDir = path.resolve(process.env.OUTPUT_DIR || 'outputs');
+        await fs.mkdir(destDir, { recursive: true });
         const sourceDir = path.resolve(process.env.UPLOAD_DIR || '../../uploads');
+        await fs.mkdir(sourceDir, { recursive: true });
         const destPath = path.join(destDir, newFilename);
 
         // Bulunanları Excel dosyasına yaz
