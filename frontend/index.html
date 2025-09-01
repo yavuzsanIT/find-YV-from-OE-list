@@ -50,7 +50,7 @@
               <strong>Dosyanızı buraya sürükleyin & bırakın</strong>
               <div class="muted">veya</div>
             </div>
-            <button id="browseBtn" class="btn btn-primary" type="button">Dosya Seç</button>
+            <button id="browseBtn" class="btn btn-primary" type="button">DOSYA SEÇ</button>
             <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" hidden />
           </div>
         </div>
@@ -61,12 +61,12 @@
             <strong id="fileName">—</strong>
             <span id="fileSize" class="muted"></span>
           </div>
-          <button id="clearBtn" class="btn btn-ghost" type="button">Temizle</button>
+          <button id="clearBtn" class="btn btn-ghost" type="button">TEMİZLE</button>
         </div>
 
         <div class="actions">
-          <button id="uploadBtn" class="btn btn-primary" disabled>Yükle & İşle</button>
-          <button id="downloadBtn" class="btn btn-success" disabled>Sonucu İndir</button>
+          <button id="uploadBtn" class="btn btn-primary" disabled>İŞLE</button>
+          <button id="downloadBtn" class="btn btn-success" disabled>SONUCU İNDİR</button>
         </div>
 
         <div id="progressWrap" class="progress-wrap hidden" aria-live="polite">
@@ -80,21 +80,19 @@
       <section class="card secondary">
         <h3>Nasıl çalışır?</h3>
         <ol>
-          <li>Önce, arama yapmak istediğiniz sütun başlığını ve kelimeleri girin.</li>
+          <li>Önce, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızdaki taramaya tabi olacak sütun başlıklarını veya başlıkta geçen kelilmeleri giriniz. Girilen değerin başlıkta yer alması yeterlidir, tüm başlıkla aynı olması şart değildir. Girilen değeri kapsayan birden fazla sütun da olabilir, sistem hepsini tarayacaktır. Örn: <i>OE ⊂ (OE_1, OE2, OEM vb.) , TRW ⊂ (TRW_DISK, TRW, KAMPANA vb.)</i></li>
           <li>
-            Ardından, OE numaraları veya çapraz kodlar içeren Excel dosyanızı seçin veya sürükleyip
+            Ardından, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızı "DOSYA SEÇ" butonuna tıklayarak seçin veya sürükleyip
             bırakın.
           </li>
-          <li>"Yükle & İşle" butonuna tıklayarak işlemi başlatın.</li>
+          <li>"İŞLE" butonuna tıklayarak işlemi başlatın.</li>
           <li>
-            Sonuç Excel dosyası hazır olduğunda, "Sonucu İndir" butonuna tıklayarak
+            Sonuç Excel dosyası hazır olduğunda, "SONUCU İNDİR" butonuna tıklayarak
             indirebilirsiniz.
           </li>
         </ol>
         <p class="muted small">
-          İşleme süreci, sunucu tarafındaki TypeScript kodu (<code style="background-color: black"
-            >excelService.processExcel()</code
-          >) tarafından yürütülür.
+          Herhangi bir sorun olduğunda lütfen <strong><a id="contact-mail" class="mail-link" href="mailto:bilisim@yavuzsan.com">bilisim@yavuzsan.com</a></strong> ile iletişime geçiniz.
         </p>
       </section>
     </main>
@@ -435,8 +433,7 @@
         try {
           const formData = new FormData();
           formData.append('file', selectedFile);
-          // "Arama yapılacak sütun başlığındaki kelime" sabit bir değere ayarlanıyor
-          formData.append('searchColumn', 'OE');
+          
           formData.append('keywords', filteredKeywords.join(','));
 
           setProgress(20, 'Yükleniyor…');
