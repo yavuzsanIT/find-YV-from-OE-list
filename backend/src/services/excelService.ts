@@ -13,18 +13,18 @@ const POOL_FILE_PATH = path.resolve(__dirname, '../../data/ORJ_NO.xlsx');
  * @param hasYVColumn - "YV" sütunu olup olmadığını belirtir.
  * @returns [Map<string, string[]>, Set<string>]
  */
-function excelToObjects(inputFilePath: string, sheetName: string, searchColumnKeyword: string, hasYVColumn: boolean): [Map<string, string[]>, Set<string>] {
+function excelToObjects(inputFilePath: string, sheetName: string, searchColumnKeyword: string, hasYVColumn: boolean): [Map<string, Set<string>>, Set<string>] {
     const wb = xlsx.readFile(inputFilePath, { cellDates: true });
-    const ws = wb.Sheets[sheetName];
+    const ws = wb.Sheets[sheetName] || wb.Sheets[wb.SheetNames[0]];
 
     if (!ws) {
         throw new Error(`Sayfa bulunamadı: ${sheetName}`);
     }
 
     const jsonData: any[] = xlsx.utils.sheet_to_json(ws, { raw: false });
-    const oe_map = new Map<string, string[]>();
+    const oe_map = new Map<string, Set<string>>();
     const oe_set: Set<string> = new Set();
-    
+
     if (jsonData.length === 0) {
         console.warn(`Excel'de veri bulunamadı: ${inputFilePath}`);
         return [oe_map, oe_set];
@@ -47,9 +47,9 @@ function excelToObjects(inputFilePath: string, sheetName: string, searchColumnKe
                     if (yv) {
                         const existing = oe_map.get(normalizedValue);
                         if (existing) {
-                            existing.push(yv);
+                            existing.add(yv);
                         } else {
-                            oe_map.set(normalizedValue, [yv]);
+                            oe_map.set(normalizedValue, new Set([yv]));
                         }
                     }
                 } else {
@@ -69,28 +69,24 @@ function excelToObjects(inputFilePath: string, sheetName: string, searchColumnKe
  * @param searchKeywords - Aranacak kelimelerin dizisi.
  * @returns Bulunan YV-OE eşleşmelerinin Map'i.
  */
-function findOENumbers(pool_map: Map<string, string[]>, query_set: Set<string>, searchKeywords: string[]): Map<string, Set<string>> {
-    const found: Map<string, Set<string>> = new Map();
-    const normalizedKeywords = searchKeywords.map(normalizeText);
+function findOENumbers(pool_map: Map<string, Set<string>>, query_set: Set<string>, searchKeywords: string[]): Map<string, Set<string>> {
+    const foundMap: Map<string, Set<string>> = new Map();
+
 
     query_set.forEach(query_oe => {
-        const existing = pool_map.get(query_oe);
-        if (existing) {
-            // Sadece OE numarasının, arama kelimelerinden herhangi birini içerip içermediğini kontrol et.
-            if (normalizedKeywords.some(keyword => query_oe.includes(keyword))) {
-                 if (!found.has(query_oe)) {
-                    found.set(query_oe, new Set(existing));
-                } else {
-                    const set = found.get(query_oe);
-                    if (set) {
-                        existing.forEach(item => set.add(item));
-                    }
-                }
+
+        const found = pool_map.get(query_oe);
+        if (found) {
+            const existing = foundMap.get(query_oe);
+            if (existing !== undefined) {
+                found.forEach(yv => existing.add(yv));
+            } else {
+                foundMap.set(query_oe, new Set(found));
             }
         }
     });
 
-    return found;
+    return foundMap;
 }
 
 /**
@@ -102,7 +98,7 @@ function findOENumbers(pool_map: Map<string, string[]>, query_set: Set<string>, 
  * @returns Oluşturulan sonuç dosyasının adı.
  */
 export async function processExcel(
-    queryFilePath: string, 
+    queryFilePath: string,
     searchColumnKeyword: string,
     searchKeywords: string[]
 ): Promise<string> {
@@ -115,7 +111,7 @@ export async function processExcel(
 
         // 3. OE numaralarını bulma
         const found = findOENumbers(full_oe_pool_map, query_OE_set, searchKeywords);
-        
+
         // Eğer hiçbir eşleşme bulunamazsa
         if (found.size === 0) {
             // Sonuç dosyasını boş oluşturmak yerine hata fırlatabiliriz.
@@ -125,6 +121,8 @@ export async function processExcel(
         // 4. Sonuçları Excel'e dönüştürme ve kaydetme
         const newFilename = `results_${Date.now()}.xlsx`;
         const destPath = path.join(path.resolve(process.env.OUTPUT_DIR || 'outputs'), newFilename);
+
+        // Bulunanları Excel dosyasına yaz
         mapToExcel(found, destPath);
 
         await fs.unlink(queryFilePath);
