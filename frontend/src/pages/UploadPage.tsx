@@ -11,7 +11,7 @@ const UploadPage: React.FC = () => {
   // Yeni state'ler: Arama kriterleri için
   const [searchColumn, setSearchColumn] = useState<string>('');
   const [keywords, setKeywords] = useState<string[]>(['']); // Başlangıçta bir boş alan
-  
+
   // Dosya seçme ve sürükle-bırak işlemleri aynı kalıyor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -45,7 +45,7 @@ const UploadPage: React.FC = () => {
     const newKeywords = keywords.filter((_, i) => i !== index);
     setKeywords(newKeywords);
   };
-  
+
   // Yükleme fonksiyonunu yeni parametrelerle güncelle
   const handleUpload = async () => {
     if (!file) {
@@ -62,23 +62,23 @@ const UploadPage: React.FC = () => {
       setError('Lütfen en az bir geçerli arama kelimesi girin.');
       return;
     }
-    
+
     // Benzersizlik kontrolü
     const uniqueKeywords = new Set(filteredKeywords);
     if (uniqueKeywords.size !== filteredKeywords.length) {
       setError('Aynı arama kelimesini birden fazla kez girmeyin.');
       return;
     }
-    
+
     setUploading(true);
     setError(null);
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('searchColumn', searchColumn);
       formData.append('keywords', filteredKeywords.join(',')); // String olarak gönderiyoruz
-      
+
       const res = await axios.post(`${API_URL}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -93,6 +93,7 @@ const UploadPage: React.FC = () => {
 
   const handleDownload = () => {
     if (!filename) return;
+    // API rotasına /api ekliyoruz
     window.location.href = `${API_URL}/api/download/${filename}`;
   };
 
@@ -100,7 +101,7 @@ const UploadPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-4 text-gray-800">Excel Dosyası İşleyici</h2>
-        
+
         {/* Dosya yükleme bölümü */}
         <div
           className="border-2 border-dashed border-gray-300 rounded p-4 mb-4 text-center cursor-pointer"
@@ -119,7 +120,7 @@ const UploadPage: React.FC = () => {
           className="mb-4 w-full"
           onChange={handleFileChange}
         />
-        
+
         {/* Arama kriterleri bölümü */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="search-column">Sütun Adında Aranacak Kelime</label>
@@ -164,7 +165,7 @@ const UploadPage: React.FC = () => {
             Yeni Değer Ekle
           </button>
         </div>
-        
+
         {/* Aksiyon butonları ve durum mesajları */}
         <button
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
@@ -173,7 +174,7 @@ const UploadPage: React.FC = () => {
         >
           {uploading ? 'Yükleniyor...' : 'Yükle & İşle'}
         </button>
-        
+
         {filename && (
           <button
             className="w-full mt-4 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
@@ -182,7 +183,7 @@ const UploadPage: React.FC = () => {
             İşlenmiş Excel'i İndir
           </button>
         )}
-        
+
         {error && (
           <div className="mt-4 text-red-600 text-center">{error}</div>
         )}

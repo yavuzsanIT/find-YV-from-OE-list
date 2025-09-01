@@ -80,10 +80,16 @@
       <section class="card secondary">
         <h3>Nasıl çalışır?</h3>
         <ol>
-          <li>Önce, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızdaki taramaya tabi olacak sütun başlıklarını veya başlıkta geçen kelilmeleri giriniz. Girilen değerin başlıkta yer alması yeterlidir, tüm başlıkla aynı olması şart değildir. Girilen değeri kapsayan birden fazla sütun da olabilir, sistem hepsini tarayacaktır. Örn: <i>OE ⊂ (OE_1, OE2, OEM vb.) , TRW ⊂ (TRW_DISK, TRW, KAMPANA vb.)</i></li>
           <li>
-            Ardından, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızı "DOSYA SEÇ" butonuna tıklayarak seçin veya sürükleyip
-            bırakın.
+            Önce, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızdaki taramaya
+            tabi olacak sütun başlıklarını veya başlıkta geçen kelilmeleri giriniz. Girilen değerin
+            başlıkta yer alması yeterlidir, tüm başlıkla aynı olması şart değildir. Girilen değeri
+            kapsayan birden fazla sütun da olabilir, sistem hepsini tarayacaktır. Örn:
+            <i>OE ⊂ (OE_1, OE2, OEM vb.) , TRW ⊂ (TRW_DISK, TRW, KAMPANA vb.)</i>
+          </li>
+          <li>
+            Ardından, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızı "DOSYA
+            SEÇ" butonuna tıklayarak seçin veya sürükleyip bırakın.
           </li>
           <li>"İŞLE" butonuna tıklayarak işlemi başlatın.</li>
           <li>
@@ -92,7 +98,13 @@
           </li>
         </ol>
         <p class="muted small">
-          Herhangi bir sorun olduğunda lütfen <strong><a id="contact-mail" class="mail-link" href="mailto:bilisim@yavuzsan.com">bilisim@yavuzsan.com</a></strong> ile iletişime geçiniz.
+          Herhangi bir sorun olduğunda lütfen
+          <strong
+            ><a id="contact-mail" class="mail-link" href="mailto:bilisim@yavuzsan.com"
+              >bilisim@yavuzsan.com</a
+            ></strong
+          >
+          ile iletişime geçiniz.
         </p>
       </section>
     </main>
@@ -433,7 +445,7 @@
         try {
           const formData = new FormData();
           formData.append('file', selectedFile);
-          
+
           formData.append('keywords', filteredKeywords.join(','));
 
           setProgress(20, 'Yükleniyor…');
@@ -467,8 +479,7 @@
       // ---------- Download ----------
       downloadBtn.addEventListener('click', async () => {
         if (!resultFilename) return;
-        // simplest: navigate to download endpoint
-        window.location.href = `${API_URL}/download/${encodeURIComponent(resultFilename)}`;
+        window.location.href = `${API_URL}/api/download/${encodeURIComponent(resultFilename)}`;
       });
     </script>
   </body>
