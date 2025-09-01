@@ -3,6 +3,7 @@
 /frontend/node_modules
 /.pnp
 .pnp.js
+/backend/node_modules
 
 
 # misc
