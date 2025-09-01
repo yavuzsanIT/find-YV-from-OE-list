@@ -479,7 +479,7 @@
       // ---------- Download ----------
       downloadBtn.addEventListener('click', async () => {
         if (!resultFilename) return;
-        window.location.href = `${API_URL}/api/download/${encodeURIComponent(resultFilename)}`;
+        window.location.href = `${API_URL}/download/${encodeURIComponent(resultFilename)}`;
       });
     </script>
   </body>

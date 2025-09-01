@@ -94,7 +94,7 @@ const UploadPage: React.FC = () => {
   const handleDownload = () => {
     if (!filename) return;
     // API rotasına /api ekliyoruz
-    window.location.href = `${API_URL}/download/${filename}`;
+    window.location.href = `${API_URL}/api/download/${filename}`;
   };
 
   return (
