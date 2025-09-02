@@ -1,11 +1,17 @@
 import path from 'path';
 import fs from 'fs/promises';
 
+/**
+ * Belirtilen dizindeki dosyaların son X tanesini siler.
+ *Dosyalar en eski olandan en yeni olana göre sıralanır.
+ * @param filePath - Dosyaların bulunduğu dizin
+ * @param X - Silinecek dosya sayısı
+ */
 export async function removeMoreThan_X(filePath: string, X: number): Promise<void> {
     try {
         const files = await fs.readdir(filePath);
        
-        // 5 dosyadan fazlasını sil
+        
         const filesWithStats = await Promise.all(
             files.map(async file => ({
                 file,

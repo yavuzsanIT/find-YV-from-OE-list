@@ -17,7 +17,9 @@ const handleUpload = async (req: Request, res: Response) => {
 
     const uploadedPath = req.file.path;
 
-    const newFilename = await excelService.processExcel(uploadedPath, keywordList);
+    const originalFilename = req.file.originalname;
+
+    const newFilename = await excelService.processExcel(uploadedPath, keywordList, originalFilename);
 
     res.json({ filename: newFilename });
   } catch (error: any) {

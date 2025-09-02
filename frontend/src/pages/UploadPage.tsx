@@ -8,9 +8,8 @@ const UploadPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filename, setFilename] = useState<string | null>(null);
-  // Yeni state'ler: Arama kriterleri için
   const [searchColumn, setSearchColumn] = useState<string>('');
-  const [keywords, setKeywords] = useState<string[]>(['']); // Başlangıçta bir boş alan
+  const [keywords, setKeywords] = useState<string[]>(['']); 
 
   // Dosya seçme ve sürükle-bırak işlemleri aynı kalıyor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +76,7 @@ const UploadPage: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('searchColumn', searchColumn);
-      formData.append('keywords', filteredKeywords.join(',')); // String olarak gönderiyoruz
+      formData.append('keywords', filteredKeywords.join(',')); // String 
 
       const res = await axios.post(`${API_URL}/api/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

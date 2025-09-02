@@ -1,10 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 import xlsx from 'xlsx';
-import { getOE_YV_Map, normalizeText } from '../utils/helpers';
+import { getDateTimeAsText, getOE_YV_Map, normalizeText } from '../utils/helpers';
 import { removeMoreThan_X } from './RemoverService';
 
-const POOL_FILE_PATH = path.resolve(__dirname, '../../data/ORJ_NO.xlsx');
 
 /**
  * Kullanıcı tarafından yüklenen Excel dosyasındaki OE numaralarını, 
@@ -14,15 +13,12 @@ const POOL_FILE_PATH = path.resolve(__dirname, '../../data/ORJ_NO.xlsx');
  * @param searchKeywords - Aranacak değerlerin dizisi.
  * @returns Oluşturulan sonuç dosyasının adı.
  */
-export async function processExcel(
-    queryFilePath: string,
-    keywordList: string[]
-): Promise<string> {
+export async function processExcel( queryFilePath: string, keywordList: string[], originalFilename: string): Promise<string> {
     try {
-        // 1. Kaynak havuz dosyasını oku ve işleme.
+        // 1. Kaynak dosyasını oku 
         const OE_YV_MAP = getOE_YV_Map();
         
-        // 2. Kullanıcının sorgu dosyasını oku ve işleme. hasYVColumn: false
+        //2. Kullanıcının sorgu dosyasını @keywordList ile oku
         const query_OE_set = getQuerySet(excelToJson(queryFilePath, "Sayfa1"), keywordList);
 
         // 3. OE numaralarını bulma
@@ -30,24 +26,34 @@ export async function processExcel(
 
         // Eğer hiçbir eşleşme bulunamazsa 
         if (found.size === 0) {
-            // Sonuç dosyasını boş oluşturmak yerine hata fırlatabiliriz.
             throw new Error("Belirtilen kriterlere uygun sonuç bulunamadı.");
         }
 
         // 4. Sonuçları Excel'e dönüştürme ve kaydetme
-        const newFilename = `results_${Date.now()}.xlsx`;
+
+        // Sonuç dosya dı oluştur
+        const fileExtension = path.extname(originalFilename);
+        const baseName = path.basename(originalFilename, fileExtension);
+        const newFilename = `${baseName}_Found_YV_Codes_${getDateTimeAsText()}${fileExtension}`;
+
+
+        // Sonuç dosyasının yolunu oluştur
         const destDir = path.resolve(process.env.OUTPUT_DIR || 'outputs');
-        await fs.mkdir(destDir, { recursive: true });
         const sourceDir = path.resolve(process.env.UPLOAD_DIR || '../../uploads');
+
+        // Kaynak-Sonuç dosya klasörlerinin varlığını garantile
+        await fs.mkdir(destDir, { recursive: true });
         await fs.mkdir(sourceDir, { recursive: true });
+
         const destPath = path.join(destDir, newFilename);
 
         // Bulunanları Excel dosyasına yaz
         mapToExcel(found, destPath);
 
+        // Kullanıcının sorgu dosya yolunu sil
         await fs.unlink(queryFilePath);
 
-        // Sadece son 5 dosyayı sakla
+        // Sadece son X dosyayı sakla
         await removeMoreThan_X(destDir, 5);
         await removeMoreThan_X(sourceDir, 3);
 
