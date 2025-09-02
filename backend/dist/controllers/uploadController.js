@@ -15,7 +15,8 @@ const handleUpload = async (req, res) => {
         }
         const keywordList = keywords.split(',').map(k => k.trim()).filter(k => k.length >= 2);
         const uploadedPath = req.file.path;
-        const newFilename = await excelService_1.default.processExcel(uploadedPath, keywordList);
+        const originalFilename = req.file.originalname;
+        const newFilename = await excelService_1.default.processExcel(uploadedPath, keywordList, originalFilename);
         res.json({ filename: newFilename });
     }
     catch (error) {

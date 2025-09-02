@@ -18,7 +18,7 @@ export async function processExcel( queryFilePath: string, keywordList: string[]
         // 1. Kaynak dosyasını oku 
         const OE_YV_MAP = getOE_YV_Map();
         
-        //2. Kullanıcının sorgu dosyasını @keywordList ile oku
+        // 2. Kullanıcının sorgu dosyasını @keywordList ile oku
         const query_OE_set = getQuerySet(excelToJson(queryFilePath, "Sayfa1"), keywordList);
 
         // 3. OE numaralarını bulma

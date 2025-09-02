@@ -6,10 +6,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeMoreThan_X = removeMoreThan_X;
 const path_1 = __importDefault(require("path"));
 const promises_1 = __importDefault(require("fs/promises"));
+/**
+ * Belirtilen dizindeki dosyaların son X tanesini siler.
+ *Dosyalar en eski olandan en yeni olana göre sıralanır.
+ * @param filePath - Dosyaların bulunduğu dizin
+ * @param X - Silinecek dosya sayısı
+ */
 async function removeMoreThan_X(filePath, X) {
     try {
         const files = await promises_1.default.readdir(filePath);
-        // 5 dosyadan fazlasını sil
         const filesWithStats = await Promise.all(files.map(async (file) => ({
             file,
             mtime: (await promises_1.default.stat(path_1.default.join(filePath, file))).mtime.getTime()
