@@ -3,26 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Excel Processing Portal</title>
+    <link rel="icon" type="svg+xml" href="./public/images/yavuzsan_logo.svg" />
+    <title>YAVUZSAN Internal</title>
     <link rel="stylesheet" href="./src/index.css" />
   </head>
   <body>
     <header class="app-header">
       <div class="brand">
-        <div class="logo">YV</div>
+        <div class="logo">
+          <img src="./public/images/yavuzsan_logo.png" class="logo --png" alt="YAVUZSAN Logo" />
+        </div>
         <div class="title">
-          <h1>Excel Processing Portal</h1>
-          <p>Upload OE / Cross-Code Excel → Process → Download Result</p>
+          <h1>YV_NO BULMA PLATFORMU</h1>
+          <p>YAVUZSAN IT Departmanı</p>
         </div>
       </div>
     </header>
 
     <main class="container">
       <section class="card">
-        <h2>Excel Dosyası İşleyici</h2>
+        <h2>Sütun Başlıklarında Aranacak Kelimeler</h2>
 
         <div class="search-options" style="margin-top: 1rem">
-          <p class="muted">İlk olarak, arama kriterlerinizi belirleyin.</p>
 
           <div id="searchKeywords" class="keyword-list"></div>
 
@@ -33,7 +35,7 @@
 
         <hr style="margin: 1.5rem 0; border-color: #eee; opacity: 0.2" />
 
-        <h2>Excel Dosyanızı Yükleyin</h2>
+        <h2>Taranacak Excel Dosyası</h2>
         <p class="muted">Desteklenen formatlar: .xlsx, .xls, .csv</p>
 
         <div id="dropzone" class="dropzone" tabindex="0" aria-label="File dropzone">
@@ -48,9 +50,9 @@
             </svg>
             <div>
               <strong>Dosyanızı buraya sürükleyin & bırakın</strong>
-              <div class="muted">veya</div>
+              <div class="muted">veya <strong>DOSYA SEÇ butonuna tıklayın</strong></div>
             </div>
-            <button id="browseBtn" class="btn btn-primary" type="button">DOSYA SEÇ</button>
+            <button id="browseBtn" class="btn btn-upload btn-colored" type="button">DOSYA SEÇ</button>
             <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" hidden />
           </div>
         </div>
@@ -65,8 +67,8 @@
         </div>
 
         <div class="actions">
-          <button id="uploadBtn" class="btn btn-primary" disabled>İŞLE</button>
-          <button id="downloadBtn" class="btn btn-success" disabled>SONUCU İNDİR</button>
+          <button id="uploadBtn" class="btn btn-primary btn-process btn-colored" disabled>İŞLE & TARA</button>
+          <button id="downloadBtn" class="btn btn-success btn-colored" disabled>SONUCU İNDİR</button>
         </div>
 
         <div id="progressWrap" class="progress-wrap hidden" aria-live="polite">
@@ -91,7 +93,7 @@
             Ardından, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızı "DOSYA
             SEÇ" butonuna tıklayarak seçin veya sürükleyip bırakın.
           </li>
-          <li>"İŞLE" butonuna tıklayarak işlemi başlatın.</li>
+          <li>"İŞLE & TARA" butonuna tıklayarak işlemi başlatın.</li>
           <li>
             Sonuç Excel dosyası hazır olduğunda, "SONUCU İNDİR" butonuna tıklayarak
             indirebilirsiniz.
@@ -193,7 +195,7 @@
           const inputWrapper = document.createElement('div');
           inputWrapper.className = 'input-group keyword-item';
           inputWrapper.innerHTML = `
-            <input type="text" class="input-field" placeholder="Aranacak kelime" value="${keyword}"/>
+            <input type="text" class="input-field" placeholder="OE, OEM, TRW, ICER vb." value="${keyword}"/>
             ${searchKeywords.length > 1 ? '<button type="button" class="btn btn-ghost remove-btn">&times;</button>' : ''}
             <div class="keyword-error hidden"></div>
         `;
@@ -215,57 +217,7 @@
           searchKeywordsContainer.appendChild(inputWrapper);
         });
       };
-
-      // Yeni: Tüm arama inputlarını render eden tek bir fonksiyon
-      const renderSearchInputs = () => {
-        // Önceki inputları temizle
-        searchKeywordsContainer.innerHTML = '';
-
-        // Sütun başlığı input'unu oluştur
-        const columnInputWrapper = document.createElement('div');
-        columnInputWrapper.className = 'input-group keyword-item';
-        columnInputWrapper.innerHTML = `
-        <label for="searchColumn" class="input-label">Arama yapılacak sütun başlığındaki kelime</label>
-        <input type="text" id="searchColumn" class="input-field" placeholder="OE, OEM, BREMBO, TRW..." value="${searchCriteria.column}"/>
-        <div class="keyword-error hidden"></div>
-    `;
-        const columnInput = columnInputWrapper.querySelector('input');
-        const columnErrorEl = columnInputWrapper.querySelector('.keyword-error');
-        columnInput.addEventListener('input', (e) => {
-          searchCriteria.column = e.target.value.trim();
-          validateColumnInput(e.target);
-        });
-        searchKeywordsContainer.appendChild(columnInputWrapper);
-
-        // Her bir arama kelimesi için input oluştur
-        searchCriteria.keywords.forEach((keyword, index) => {
-          const inputWrapper = document.createElement('div');
-          inputWrapper.className = 'input-group keyword-item';
-          inputWrapper.innerHTML = `
-            <label class="input-label hidden">Aranacak kelime</label>
-            <input type="text" class="input-field" placeholder="Aranacak kelime" value="${keyword}"/>
-            ${searchCriteria.keywords.length > 1 ? '<button type="button" class="btn btn-ghost remove-btn">&times;</button>' : ''}
-            <div class="keyword-error hidden"></div>
-        `;
-          const input = inputWrapper.querySelector('input');
-          const removeBtn = inputWrapper.querySelector('.remove-btn');
-          const errorEl = inputWrapper.querySelector('.keyword-error');
-
-          input.addEventListener('input', (e) => {
-            searchCriteria.keywords[index] = e.target.value.trim();
-            validateKeywordInput(e.target);
-          });
-
-          if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-              searchCriteria.keywords.splice(index, 1);
-              renderSearchInputs(); // UI'ı yeniden çiz
-            });
-          }
-
-          searchKeywordsContainer.appendChild(inputWrapper);
-        });
-      };
+      
 
       const validateKeywordInput = (inputEl) => {
         const value = inputEl.value.trim();

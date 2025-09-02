@@ -59,8 +59,8 @@ body {
 }
 
 .logo {
-  width: 36px;
-  height: 36px;
+  width: 80px;
+  height: 80px;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--primary), #60a5fa);
   display: grid;
@@ -220,7 +220,8 @@ body {
 
 .btn-primary {
   background: var(--primary);
-  color: #fff
+  color: #fff;
+  text-align: center;
 }
 
 .btn-primary:hover {
@@ -242,6 +243,65 @@ body {
   width: 40%;
   size: 40px;
 }
+
+.btn-colored {
+  padding: 10px 30px;
+  text-align: center;
+  width: 200px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  font-family: 'Roboto', 'Segoe UI', 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  /* Yarı kalın, okunaklı */
+  letter-spacing: 0.3px;
+  /* Hafif açarak okunabilirliği artırır */
+}
+
+/* Upload butonu */
+.btn-upload {
+  margin-left: auto;
+  background: #4CAF50;
+  /* Yeşil */
+  color: #fff;
+}
+
+.btn-upload:hover {
+  background: #43A047;
+  /* Koyu yeşil */
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+}
+
+/* Process butonu */
+.btn-process {
+  background: #2196F3;
+  /* Mavi */
+  color: #fff;
+}
+
+.btn-process:hover {
+  background: #1976D2;
+  /* Koyu mavi */
+  box-shadow: 0 0 8px rgba(33, 150, 243, 0.6);
+}
+
+/* Download butonu (success gibi düşünebiliriz) */
+.btn-success {
+  margin-left: auto;
+  margin-right: 23px;
+  background: #9C27B0;
+  /* Mor */
+  color: #fff;
+}
+
+.btn-success:hover {
+  background: #7B1FA2;
+  /* Koyu mor */
+  box-shadow: 0 0 8px rgba(255, 152, 0, 0.6);
+}
+
 
 .progress-wrap {
   margin-top: 14px
@@ -332,7 +392,7 @@ progress::-webkit-progress-value {
   border: none;
   width: 40%;
   display: block;
-  
+
   transition: all 0.3s;
 }
 
