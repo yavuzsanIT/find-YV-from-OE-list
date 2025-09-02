@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import xlsx from 'xlsx';
-import { normalizeText } from '../utils/helpers';
+import { getOE_YV_Map, normalizeText } from '../utils/helpers';
 import { removeMoreThan_X } from './RemoverService';
 
 const POOL_FILE_PATH = path.resolve(__dirname, '../../data/ORJ_NO.xlsx');
@@ -19,14 +19,14 @@ export async function processExcel(
     keywordList: string[]
 ): Promise<string> {
     try {
-        // 1. Kaynak havuz dosyasını oku ve işleme. hasYVColumn: true
-        const full_oe_pool_map = getSourceMap(excelToJson(POOL_FILE_PATH, "NORMALIZED_OE_NUMBERS"));
-
+        // 1. Kaynak havuz dosyasını oku ve işleme.
+        const OE_YV_MAP = getOE_YV_Map();
+        
         // 2. Kullanıcının sorgu dosyasını oku ve işleme. hasYVColumn: false
         const query_OE_set = getQuerySet(excelToJson(queryFilePath, "Sayfa1"), keywordList);
 
         // 3. OE numaralarını bulma
-        const found = findOENumbers(full_oe_pool_map, query_OE_set);
+        const found = findOENumbers(OE_YV_MAP, query_OE_set);
 
         // Eğer hiçbir eşleşme bulunamazsa 
         if (found.size === 0) {
@@ -73,29 +73,7 @@ function excelToJson(inputFilePath: string, sheetName: string): any[] {
     return jsonData;
 }
 
-function getSourceMap(jsonData: any[]): Map<string, Set<string>> {
-    const oe_map = new Map<string, Set<string>>();
 
-    if (jsonData.length === 0) {
-        console.warn(`Source Excel'de veri bulunamadı.`);
-        return oe_map;
-    }
-
-    jsonData.forEach((item: any) => {
-        const oe = item["OE"];
-        const yv = item["YV"];
-
-        if (oe && yv) {
-            if (oe_map.has(oe)) {
-                oe_map.get(oe)?.add(yv);
-            } else {
-                oe_map.set(oe, new Set([yv]));
-            }
-        }
-    })
-
-    return oe_map;
-}
 
 /**
  * Given a JSON array of data from an Excel file and a search column keyword,
@@ -155,27 +133,23 @@ function getQuerySet(jsonData: any[], keywordList: string[]): Set<string> {
  * where each key is an OE number and the value is a set of YV numbers
  * that match the OE number.
  *
- * @param pool_map - A map where the keys are OE numbers and the values
+ * @param POOL_MAP - A map where the keys are OE numbers and the values
  *   are sets of YV numbers that match the OE number.
- * @param query_set - A set of OE numbers to search for in the pool map.
+ * @param QUERY_SET - A set of OE numbers to search for in the pool map.
  * @param searchKeywords - Array of search keywords. Not used in this function.
  * @returns - A map where each key is an OE number and the value is a set
  *   of YV numbers that match the OE number.
  */
-function findOENumbers(pool_map: Map<string, Set<string>>, query_set: Set<string>): Map<string, Set<string>> {
-    const foundMap: Map<string, Set<string>> = new Map();
+function findOENumbers(POOL_MAP: Map<string, string[]>, QUERY_SET: Set<string>): Map<string, string[]> {
+    
+    const foundMap: Map<string, string[]> = new Map();
 
 
-    query_set.forEach(query_oe => {
+    QUERY_SET.forEach(query_oe => {
 
-        const found = pool_map.get(query_oe);
-        if (found) {
-            const existing = foundMap.get(query_oe);
-            if (existing !== undefined) {
-                found.forEach(yv => existing.add(yv));
-            } else {
-                foundMap.set(query_oe, new Set(found));
-            }
+        const found_YV_array = POOL_MAP.get(query_oe);
+        if (found_YV_array) {
+            foundMap.set(query_oe, found_YV_array);
         }
     });
 
@@ -193,13 +167,13 @@ function findOENumbers(pool_map: Map<string, Set<string>>, query_set: Set<string
  *   sets of YV numbers that match the OE number.
  * @param outputFilePath - The path to write the Excel file to.
  */
-function mapToExcel(resultMap: Map<string, Set<string>>, outputFilePath: string) {
+function mapToExcel(resultMap: Map<string, string[]>, outputFilePath: string) {
     const rowData: any[] = [];
 
-    for (const [oe, yvSet] of resultMap.entries()) {
+    for (const [oe, yvArray] of resultMap.entries()) {
         const row: any = { OE: oe };
         let index = 1;
-        for (const yv of yvSet) {
+        for (const yv of yvArray) {
             row[`YV_${index}`] = yv;
             index++;
         }
