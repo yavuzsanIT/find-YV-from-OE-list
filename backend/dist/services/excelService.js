@@ -87,9 +87,14 @@ function getQuerySet(jsonData, keywordList) {
         console.warn(`Query Excel'de veri bulunamadı.`);
         return oe_set;
     }
-    const headers = Object.keys(jsonData[0]);
+    const headers = new Set;
+    jsonData.forEach((item) => {
+        Object.keys(item).forEach((key) => {
+            headers.add(key);
+        });
+    });
     const relevantHeaders = keywordList.flatMap(kw => {
-        return headers.filter(header => header.toLowerCase().includes(kw.toLowerCase()));
+        return Array.from(headers).filter(header => header.toLowerCase().includes(kw.toLowerCase()));
     });
     if (relevantHeaders.length === 0) {
         throw new Error(`Dosyanızda '${keywordList}' kelimesini içeren bir sütun başlığı bulunamadı. Lütfen kontrol edin.`);
