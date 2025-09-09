@@ -105,7 +105,7 @@ function getQuerySet(jsonData, keywordList) {
             if (value) {
                 const normalizedValue = (0, helpers_1.normalizeText)(value.toString().trim());
                 if (normalizedValue) {
-                    oe_set.add(normalizedValue);
+                    oe_set.add(normalizedValue.toUpperCase());
                 }
             }
         });
