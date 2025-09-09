@@ -13,11 +13,11 @@ import { removeMoreThan_X } from './RemoverService';
  * @param searchKeywords - Aranacak değerlerin dizisi.
  * @returns Oluşturulan sonuç dosyasının adı.
  */
-export async function processExcel( queryFilePath: string, keywordList: string[], originalFilename: string): Promise<string> {
+export async function processExcel(queryFilePath: string, keywordList: string[], originalFilename: string): Promise<string> {
     try {
         // 1. Kaynak dosyasını oku 
         const OE_YV_MAP = getOE_YV_Map();
-        
+
         // 2. Kullanıcının sorgu dosyasını @keywordList ile oku
         const query_OE_set = getQuerySet(excelToJson(queryFilePath, "Sayfa1"), keywordList);
 
@@ -106,10 +106,17 @@ function getQuerySet(jsonData: any[], keywordList: string[]): Set<string> {
         return oe_set;
     }
 
-    const headers = Object.keys(jsonData[0]);
-    const relevantHeaders = keywordList.flatMap(kw => {
-        return headers.filter(header => header.toLowerCase().includes(kw.toLowerCase()));
+    const headers = new Set<string>;
+    jsonData.forEach((item: any) => {
+        Object.keys(item).forEach((key: string) => {
+            headers.add(key);
+        });
     })
+
+    const relevantHeaders = keywordList.flatMap(kw => {
+        return Array.from(headers).filter(header => header.toLowerCase().includes(kw.toLowerCase()));
+    })
+
     if (relevantHeaders.length === 0) {
         throw new Error(`Dosyanızda '${keywordList}' kelimesini içeren bir sütun başlığı bulunamadı. Lütfen kontrol edin.`);
     }
@@ -147,7 +154,7 @@ function getQuerySet(jsonData: any[], keywordList: string[]): Set<string> {
  *   of YV numbers that match the OE number.
  */
 function findOENumbers(POOL_MAP: Map<string, string[]>, QUERY_SET: Set<string>): Map<string, string[]> {
-    
+
     const foundMap: Map<string, string[]> = new Map();
 
 
