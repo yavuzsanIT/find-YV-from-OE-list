@@ -37,4 +37,4 @@ function convertToJSonFromExcel(filePath: string, sheetName: string) {
     fs.writeFile(path.join(__dirname, '../../data/ORJ_NO.json'), JSON.stringify(yv_oe_records, null, 2));
 }
 
-convertToJSonFromExcel('../../data/ORJ_NO.xlsx', 'NORMALIZED_OE_NUMBERS');
+convertToJSonFromExcel('../../data/ORJ_NO_KATALOG.xlsx', 'Sheet1');
