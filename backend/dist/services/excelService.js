@@ -103,10 +103,7 @@ function getQuerySet(jsonData, keywordList) {
         relevantHeaders.forEach(relevantHeader => {
             const value = item[relevantHeader];
             if (value) {
-                const normalizedValue = (0, helpers_1.normalizeText)(value.toString().trim());
-                if (normalizedValue) {
-                    oe_set.add(normalizedValue.toUpperCase());
-                }
+                oe_set.add(value.toString().trim());
             }
         });
     });
@@ -128,7 +125,7 @@ function getQuerySet(jsonData, keywordList) {
 function findOENumbers(POOL_MAP, QUERY_SET) {
     const foundMap = new Map();
     QUERY_SET.forEach(query_oe => {
-        const found_YV_array = POOL_MAP.get(query_oe);
+        const found_YV_array = POOL_MAP.get((0, helpers_1.normalizeText)(query_oe));
         if (found_YV_array) {
             foundMap.set(query_oe, found_YV_array);
         }

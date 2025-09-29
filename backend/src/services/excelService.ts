@@ -125,10 +125,7 @@ function getQuerySet(jsonData: any[], keywordList: string[]): Set<string> {
         relevantHeaders.forEach(relevantHeader => {
             const value = item[relevantHeader];
             if (value) {
-                const normalizedValue = normalizeText(value.toString().trim());
-                if (normalizedValue) {
-                    oe_set.add(normalizedValue.toUpperCase());
-                }
+                oe_set.add(value.toString().trim());
             }
         })
     })
@@ -160,7 +157,7 @@ function findOENumbers(POOL_MAP: Map<string, string[]>, QUERY_SET: Set<string>):
 
     QUERY_SET.forEach(query_oe => {
 
-        const found_YV_array = POOL_MAP.get(query_oe);
+        const found_YV_array = POOL_MAP.get(normalizeText(query_oe));
         if (found_YV_array) {
             foundMap.set(query_oe, found_YV_array);
         }
