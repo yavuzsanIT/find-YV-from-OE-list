@@ -19,18 +19,30 @@ const RemoverService_1 = require("./RemoverService");
  */
 async function processExcel(queryFilePath, keywordList, originalFilename) {
     try {
+        // 0. Kaynak dosyayı oku ve tut
+        const sourceData = excelToJson(queryFilePath, "Sayfa1");
+        const relevantHeaders = getRelevantHeaders(sourceData, keywordList);
         // 1. Kaynak dosyasını oku 
         const OE_YV_MAP = (0, helpers_1.getOE_YV_Map)();
         // 2. Kullanıcının sorgu dosyasını @keywordList ile oku
-        const query_OE_set = getQuerySet(excelToJson(queryFilePath, "Sayfa1"), keywordList);
+        const query_OE_set = getQuerySet(sourceData, keywordList);
         // 3. OE numaralarını bulma
         const found = findOENumbers(OE_YV_MAP, query_OE_set);
         // Eğer hiçbir eşleşme bulunamazsa 
         if (found.size === 0) {
             throw new Error("Belirtilen kriterlere uygun sonuç bulunamadı.");
         }
+        // INFO: Gelen dosya üzerine bulunanları ekleme
+        sourceData.map((row) => {
+            relevantHeaders.forEach(rh => {
+                const code = row[rh]; // örneğin OEM numarası
+                if (found.has(code)) {
+                    row["Found_YV_Codes"] = found.get(row[rh])?.join(", ") || ""; // yeni sütun ekledik
+                }
+            });
+        });
         // 4. Sonuçları Excel'e dönüştürme ve kaydetme
-        // Sonuç dosya dı oluştur
+        // Sonuç dosya adı oluştur
         const fileExtension = path_1.default.extname(originalFilename);
         const baseName = path_1.default.basename(originalFilename, fileExtension);
         const newFilename = `${baseName}_Found_YV_Codes_${(0, helpers_1.getDateTimeAsText)()}${fileExtension}`;
@@ -42,7 +54,11 @@ async function processExcel(queryFilePath, keywordList, originalFilename) {
         await promises_1.default.mkdir(sourceDir, { recursive: true });
         const destPath = path_1.default.join(destDir, newFilename);
         // Bulunanları Excel dosyasına yaz
-        mapToExcel(found, destPath);
+        //mapToExcel(found, destPath);
+        const ws = xlsx_1.default.utils.json_to_sheet(sourceData);
+        const wb = xlsx_1.default.utils.book_new();
+        xlsx_1.default.utils.book_append_sheet(wb, ws, "Updated Data");
+        xlsx_1.default.writeFile(wb, destPath);
         // Kullanıcının sorgu dosya yolunu sil
         await promises_1.default.unlink(queryFilePath);
         // Sadece son X dosyayı sakla
@@ -87,18 +103,7 @@ function getQuerySet(jsonData, keywordList) {
         console.warn(`Query Excel'de veri bulunamadı.`);
         return oe_set;
     }
-    const headers = new Set;
-    jsonData.forEach((item) => {
-        Object.keys(item).forEach((key) => {
-            headers.add(key);
-        });
-    });
-    const relevantHeaders = keywordList.flatMap(kw => {
-        return Array.from(headers).filter(header => header.toLowerCase().includes(kw.toLowerCase()));
-    });
-    if (relevantHeaders.length === 0) {
-        throw new Error(`Dosyanızda '${keywordList}' kelimesini içeren bir sütun başlığı bulunamadı. Lütfen kontrol edin.`);
-    }
+    const relevantHeaders = getRelevantHeaders(jsonData, keywordList);
     jsonData.forEach((item) => {
         relevantHeaders.forEach(relevantHeader => {
             const value = item[relevantHeader];
@@ -156,5 +161,20 @@ function mapToExcel(resultMap, outputFilePath) {
     const wb = xlsx_1.default.utils.book_new();
     xlsx_1.default.utils.book_append_sheet(wb, ws, "Found OE Numbers");
     xlsx_1.default.writeFile(wb, outputFilePath);
+}
+function getRelevantHeaders(jsonData, keywordList) {
+    const headers = new Set;
+    jsonData.forEach((item) => {
+        Object.keys(item).forEach((key) => {
+            headers.add(key);
+        });
+    });
+    const relevantHeaders = keywordList.flatMap(kw => {
+        return Array.from(headers).filter(header => header.toLowerCase().includes(kw.toLowerCase()));
+    });
+    if (relevantHeaders.length === 0) {
+        throw new Error(`Dosyanızda '${keywordList}' kelimesini içeren bir sütun başlığı bulunamadı. Lütfen kontrol edin.`);
+    }
+    return relevantHeaders;
 }
 exports.default = { processExcel };

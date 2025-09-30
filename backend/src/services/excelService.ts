@@ -15,11 +15,16 @@ import { removeMoreThan_X } from './RemoverService';
  */
 export async function processExcel(queryFilePath: string, keywordList: string[], originalFilename: string): Promise<string> {
     try {
+
+        // 0. Kaynak dosyayı oku ve tut
+        const sourceData = excelToJson(queryFilePath, "Sayfa1");
+        const relevantHeaders = getRelevantHeaders(sourceData, keywordList);
+
         // 1. Kaynak dosyasını oku 
         const OE_YV_MAP = getOE_YV_Map();
 
         // 2. Kullanıcının sorgu dosyasını @keywordList ile oku
-        const query_OE_set = getQuerySet(excelToJson(queryFilePath, "Sayfa1"), keywordList);
+        const query_OE_set = getQuerySet(sourceData, keywordList);
 
         // 3. OE numaralarını bulma
         const found = findOENumbers(OE_YV_MAP, query_OE_set);
@@ -29,9 +34,20 @@ export async function processExcel(queryFilePath: string, keywordList: string[],
             throw new Error("Belirtilen kriterlere uygun sonuç bulunamadı.");
         }
 
+        
+        // INFO: Gelen dosya üzerine bulunanları ekleme
+        sourceData.map((row: any) => {
+            relevantHeaders.forEach(rh => {
+                const code = row[rh]; // örneğin OEM numarası
+                if (found.has(code)) {
+                    row["Found_YV_Codes"] = found.get(row[rh])?.join(", ") || ""; // yeni sütun ekledik
+                }
+            })
+        })
+
         // 4. Sonuçları Excel'e dönüştürme ve kaydetme
 
-        // Sonuç dosya dı oluştur
+        // Sonuç dosya adı oluştur
         const fileExtension = path.extname(originalFilename);
         const baseName = path.basename(originalFilename, fileExtension);
         const newFilename = `${baseName}_Found_YV_Codes_${getDateTimeAsText()}${fileExtension}`;
@@ -48,7 +64,13 @@ export async function processExcel(queryFilePath: string, keywordList: string[],
         const destPath = path.join(destDir, newFilename);
 
         // Bulunanları Excel dosyasına yaz
-        mapToExcel(found, destPath);
+        //mapToExcel(found, destPath);
+
+        const ws = xlsx.utils.json_to_sheet(sourceData);
+        const wb = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(wb, ws, "Updated Data");
+        xlsx.writeFile(wb, destPath);
+
 
         // Kullanıcının sorgu dosya yolunu sil
         await fs.unlink(queryFilePath);
@@ -106,20 +128,7 @@ function getQuerySet(jsonData: any[], keywordList: string[]): Set<string> {
         return oe_set;
     }
 
-    const headers = new Set<string>;
-    jsonData.forEach((item: any) => {
-        Object.keys(item).forEach((key: string) => {
-            headers.add(key);
-        });
-    })
-
-    const relevantHeaders = keywordList.flatMap(kw => {
-        return Array.from(headers).filter(header => header.toLowerCase().includes(kw.toLowerCase()));
-    })
-
-    if (relevantHeaders.length === 0) {
-        throw new Error(`Dosyanızda '${keywordList}' kelimesini içeren bir sütun başlığı bulunamadı. Lütfen kontrol edin.`);
-    }
+    const relevantHeaders = getRelevantHeaders(jsonData, keywordList);
 
     jsonData.forEach((item: any) => {
         relevantHeaders.forEach(relevantHeader => {
@@ -153,7 +162,6 @@ function getQuerySet(jsonData: any[], keywordList: string[]): Set<string> {
 function findOENumbers(POOL_MAP: Map<string, string[]>, QUERY_SET: Set<string>): Map<string, string[]> {
 
     const foundMap: Map<string, string[]> = new Map();
-
 
     QUERY_SET.forEach(query_oe => {
 
@@ -194,6 +202,26 @@ function mapToExcel(resultMap: Map<string, string[]>, outputFilePath: string) {
     const wb = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(wb, ws, "Found OE Numbers");
     xlsx.writeFile(wb, outputFilePath);
+}
+
+
+function getRelevantHeaders(jsonData: any[], keywordList: string[]): string[] {
+    const headers = new Set<string>;
+    jsonData.forEach((item: any) => {
+        Object.keys(item).forEach((key: string) => {
+            headers.add(key);
+        });
+    })
+
+    const relevantHeaders = keywordList.flatMap(kw => {
+        return Array.from(headers).filter(header => header.toLowerCase().includes(kw.toLowerCase()));
+    })
+
+    if (relevantHeaders.length === 0) {
+        throw new Error(`Dosyanızda '${keywordList}' kelimesini içeren bir sütun başlığı bulunamadı. Lütfen kontrol edin.`);
+    }
+
+    return relevantHeaders;
 }
 
 export default { processExcel };
