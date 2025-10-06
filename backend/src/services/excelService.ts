@@ -34,13 +34,24 @@ export async function processExcel(queryFilePath: string, keywordList: string[],
             throw new Error("Belirtilen kriterlere uygun sonuç bulunamadı.");
         }
 
-        
+
         // INFO: Gelen dosya üzerine bulunanları ekleme
         sourceData.map((row: any) => {
             relevantHeaders.forEach(rh => {
                 const code = row[rh]; // örneğin OEM numarası
-                if (found.has(code)) {
-                    row["Found_YV_Codes"] = found.get(row[rh])?.join(", ") || ""; // yeni sütun ekledik
+
+                if (code) { // Hata önleme: Boş/null kodu normalize etme
+                    // !!! KRİTİK DÜZELTME: Eşleşme kontrolü için satırdaki OE'yi normalize et !!!
+                    const normalizedCode = normalizeText(code);
+
+                    if (found.has(normalizedCode)) { // Şimdi doğru anahtarla arama yap
+                        // Not: foundMap'e atanmış anahtar normalizedCode değil, query_oe'ydi.
+                        // Bu yüzden ya foundMap'i query_oe ile değil normalized OE ile dolduracağız (Daha temiz) 
+                        // ya da burada code yerine query_oe'yi kullanacağız (Daha karmaşık).
+
+                        // En temiz yol: findOENumbers'ı ve burayı normalize OE ile kullan
+                        row["Found_YV_Codes"] = found.get(normalizedCode)?.join(", ") || "";
+                    }
                 }
             })
         })
