@@ -44,3 +44,6 @@ lerna-debug.log*
 # Bu satırları sadece git'e commit etmek istemediğin örnek veya test excel dosyaları için ekle.
 # Örneğin, /src/assets/test_data.xlsx gibi.
 # /src/assets/*.xlsx
+
+# RESOURCES
+/backend/data/*.xlsx

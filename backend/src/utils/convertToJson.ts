@@ -17,8 +17,8 @@ function convertToJSonFromExcel(filePath: string, sheetName: string) {
     }
 
     jsonData.forEach((item: any) => {
-        const oe = item["OE"];
-        const yv = item["YV"];
+        const oe = item["orjNo"];
+        const yv = item["yvNo"];
 
         if (oe && yv) {
             if (YV_OE_map.has(oe)) {
