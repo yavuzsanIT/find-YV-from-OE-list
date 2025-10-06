@@ -33,9 +33,13 @@ export function getDateTimeAsText(): string {
 export function normalizeText(text: string): string {
     // 1. Tüm Non-ASCII boşlukları (örn. \u00A0, \uFEFF) normal boşluğa (\u0020) çevir.
     // Bu, özellikle dış sistemlerden (Excel, FileMaker Pro vb.) gelen veriler için kritiktir.
-    const cleanedText = text.normalize('NFKD').replace(/[\s\u0000-\u001F\u007F-\u009F\u00A0\uFEFF\u2000-\u200A\u202F\u205F\u3000]+/g, '');
+    let cleanedText = text.replace(/[\u0000-\u001F\u007F-\u009F\u00A0\uFEFF\u2000-\u200A\u202F\u205F\u3000]/g, ' '); 
     
-    // 2. Geri kalan (kelime aralarındaki) özel karakterleri sil.
-    // Tüm boşluklar zaten başında ve sonda silindi. Şimdi sadece ortadaki özel karakterler kaldı.
-    return cleanedText.replace(/[^\w\s]/gu, '');
+    // 2. Metnin başındaki ve sonundaki tüm beyaz boşlukları (\s, artık normal boşlukları da içeriyor) tek hamlede sil.
+    // Bu, .trim()'in yaptığı işi Regex ile çok daha güvenli yapar.
+    cleanedText = cleanedText.replace(/^\s+|\s+$/g, '');
+
+    // 3. Geri kalan (kelime aralarındaki) özel karakterleri sil.
+    // Tüm boşluklar zaten başta ve sonda silindi. Şimdi sadece ortadaki özel karakterler kaldı.
+    return cleanedText.replace(/[^a-zA-Z0-9]/g, '');
 }
