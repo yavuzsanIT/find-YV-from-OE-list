@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { API_URL } from '../config';
 
-
+const API_URL = import.meta.env.VITE_API_URL;
 
 const UploadPage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -10,7 +9,7 @@ const UploadPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [filename, setFilename] = useState<string | null>(null);
   const [searchColumn, setSearchColumn] = useState<string>('');
-  const [keywords, setKeywords] = useState<string[]>(['']);
+  const [keywords, setKeywords] = useState<string[]>(['']); 
 
   // Dosya seçme ve sürükle-bırak işlemleri aynı kalıyor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

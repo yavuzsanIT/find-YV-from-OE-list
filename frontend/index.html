@@ -1,16 +1,17 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="icon" type="image/png" href="/public/images/yavuzsan_logo.png" />
+    <link rel="icon" type="svg+xml" href="./public/images/yavuzsan_logo.svg" />
     <title>YAVUZSAN Internal</title>
+    <link rel="stylesheet" href="./src/index.css" />
   </head>
   <body>
     <header class="app-header">
       <div class="brand">
         <div class="logo">
-          <img src="/public/images/yavuzsan_logo.png" class="logo --png" alt="YAVUZSAN Logo" />
+          <img src="./public/images/yavuzsan_logo.png" class="logo --png" alt="YAVUZSAN Logo" />
         </div>
         <div class="title">
           <h1>YV_NO BULMA PLATFORMU</h1>
@@ -19,13 +20,419 @@
       </div>
     </header>
 
-    <main id="app-root" class="container"></main>
+    <main class="container">
+      <section class="card">
+        <h2>Sütun Başlıklarında Aranacak Kelimeler</h2>
+
+        <div class="search-options" style="margin-top: 1rem">
+
+          <div id="searchKeywords" class="keyword-list"></div>
+
+          <button id="addKeywordBtn" class="btn btn-secondary" type="button">
+            Yeni Kelime Ekle
+          </button>
+        </div>
+
+        <hr style="margin: 1.5rem 0; border-color: #eee; opacity: 0.2" />
+
+        <h2>Taranacak Excel Dosyası</h2>
+        <p class="muted">Desteklenen formatlar: .xlsx, .xls, .csv</p>
+
+        <div id="dropzone" class="dropzone" tabindex="0" aria-label="File dropzone">
+          <div class="dz-inner">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v4h16v-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+            <div>
+              <strong>Dosyanızı buraya sürükleyin & bırakın</strong>
+              <div class="muted">veya <strong>DOSYA SEÇ butonuna tıklayın</strong></div>
+            </div>
+            <button id="browseBtn" class="btn btn-upload btn-colored" type="button">DOSYA SEÇ</button>
+            <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" hidden />
+          </div>
+        </div>
+
+        <div id="fileInfo" class="file-info hidden">
+          <div>
+            <span class="badge">Seçilen</span>
+            <strong id="fileName">—</strong>
+            <span id="fileSize" class="muted"></span>
+          </div>
+          <button id="clearBtn" class="btn btn-ghost" type="button">TEMİZLE</button>
+        </div>
+
+        <div class="actions">
+          <button id="uploadBtn" class="btn btn-primary btn-process btn-colored" disabled>İŞLE & TARA</button>
+          <button id="downloadBtn" class="btn btn-success btn-colored" disabled>SONUCU İNDİR</button>
+        </div>
+
+        <div id="progressWrap" class="progress-wrap hidden" aria-live="polite">
+          <div class="progress-label" id="progressLabel">Hazırlanıyor…</div>
+          <progress id="progressBar" max="100" value="0">0%</progress>
+        </div>
+
+        <div id="alert" class="alert hidden" role="alert"></div>
+      </section>
+
+      <section class="card secondary">
+        <h3>Nasıl çalışır?</h3>
+        <ol>
+          <li>
+            Önce, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızdaki taramaya
+            tabi olacak sütun başlıklarını veya başlıkta geçen kelilmeleri giriniz. Girilen değerin
+            başlıkta yer alması yeterlidir, tüm başlıkla aynı olması şart değildir. Girilen değeri
+            kapsayan birden fazla sütun da olabilir, sistem hepsini tarayacaktır. Örn:
+            <i>OE ⊂ (OE_1, OE2, OEM vb.) , TRW ⊂ (TRW_DISK, TRW, KAMPANA vb.)</i>
+          </li>
+          <li>
+            Ardından, taranacak olan OE numaraları veya çapraz kodlar içeren Excel dosyanızı "DOSYA
+            SEÇ" butonuna tıklayarak seçin veya sürükleyip bırakın.
+          </li>
+          <li>"İŞLE & TARA" butonuna tıklayarak işlemi başlatın.</li>
+          <li>
+            Sonuç Excel dosyası hazır olduğunda, "SONUCU İNDİR" butonuna tıklayarak
+            indirebilirsiniz.
+          </li>
+        </ol>
+        <p class="muted small">
+          Herhangi bir sorun olduğunda lütfen
+          <strong
+            ><a id="contact-mail" class="mail-link" href="mailto:bilisim@yavuzsan.com"
+              >bilisim@yavuzsan.com</a
+            ></strong
+          >
+          ile iletişime geçiniz.
+        </p>
+      </section>
+    </main>
 
     <footer class="app-footer">
       <span>© 2025 YAVUZSAN • Internal Tool</span>
     </footer>
 
-    <!-- Tüm script’ler bundle’a dahil olur -->
-    <script type="module" src="/src/uploadPage.ts"></script>
+    <script>
+      // ---------- Config ----------
+      const defaultApi = 'http://localhost:10000/api';
+      const url = new URL(window.location.href);
+      const API_URL = url.searchParams.get('api') || defaultApi;
+
+      // ---------- Elements ----------
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('fileInput');
+      const browseBtn = document.getElementById('browseBtn');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const fileInfo = document.getElementById('fileInfo');
+      const fileNameEl = document.getElementById('fileName');
+      const fileSizeEl = document.getElementById('fileSize');
+      const alertBox = document.getElementById('alert');
+      const progressWrap = document.getElementById('progressWrap');
+      const progressBar = document.getElementById('progressBar');
+      const progressLabel = document.getElementById('progressLabel');
+      const searchKeywordsContainer = document.getElementById('searchKeywords');
+      const addKeywordBtn = document.getElementById('addKeywordBtn');
+
+      // ---------- State ----------
+      let selectedFile = null;
+      let resultFilename = null;
+      let searchKeywords = ['']; // Başlangıçta bir tane boş arama kelimesi input'u için
+
+      // ---------- Helpers ----------
+      const showAlert = (msg, type = 'info') => {
+        alertBox.textContent = msg;
+        alertBox.className = 'alert ' + type;
+        alertBox.classList.remove('hidden');
+      };
+      const hideAlert = () => alertBox.classList.add('hidden');
+
+      const formatBytes = (bytes) => {
+        if (!bytes && bytes !== 0) return '';
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+      };
+
+      const setFile = (file) => {
+        selectedFile = file;
+        if (file) {
+          fileNameEl.textContent = file.name;
+          fileSizeEl.textContent = '• ' + formatBytes(file.size);
+          fileInfo.classList.remove('hidden');
+          uploadBtn.disabled = false;
+          downloadBtn.disabled = true;
+          resultFilename = null;
+        } else {
+          fileInfo.classList.add('hidden');
+          uploadBtn.disabled = true;
+        }
+      };
+
+      const setProgress = (val, label) => {
+        progressWrap.classList.remove('hidden');
+        progressBar.value = val;
+        progressBar.textContent = val + '%';
+        progressLabel.textContent = label || val + '%';
+      };
+
+      const resetProgress = () => {
+        progressWrap.classList.add('hidden');
+        progressBar.value = 0;
+        progressLabel.textContent = 'Preparing…';
+      };
+
+      const renderKeywordInputs = () => {
+        // Önceki inputları temizle
+        searchKeywordsContainer.innerHTML = '';
+
+        // Her bir arama kelimesi için input oluştur
+        searchKeywords.forEach((keyword, index) => {
+          const inputWrapper = document.createElement('div');
+          inputWrapper.className = 'input-group keyword-item';
+          inputWrapper.innerHTML = `
+            <input type="text" class="input-field" placeholder="OE, OEM, TRW vb." value="${keyword}"/>
+            ${searchKeywords.length > 1 ? '<button type="button" class="btn btn-ghost remove-btn">&times;</button>' : ''}
+            <div class="keyword-error hidden"></div>
+        `;
+          const input = inputWrapper.querySelector('input');
+          const removeBtn = inputWrapper.querySelector('.remove-btn');
+
+          input.addEventListener('input', (e) => {
+            searchKeywords[index] = e.target.value.trim();
+            validateKeywordInput(e.target);
+          });
+
+          if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+              searchKeywords.splice(index, 1);
+              renderKeywordInputs(); // UI'ı yeniden çiz
+            });
+          }
+
+          searchKeywordsContainer.appendChild(inputWrapper);
+        });
+      };
+      
+
+      const validateKeywordInput = (inputEl) => {
+        const value = inputEl.value.trim();
+        const errorEl = inputEl.parentElement.querySelector('.keyword-error');
+
+        errorEl.classList.add('hidden');
+        inputEl.classList.remove('is-error');
+
+        if (value.length > 0 && value.length < 2) {
+          errorEl.textContent = 'En az 2 karakter olmalı.';
+          errorEl.classList.remove('hidden');
+          inputEl.classList.add('is-error');
+          return false;
+        }
+
+        const currentKeywords = searchKeywords.filter((k) => k.length > 0);
+        const isDuplicate = currentKeywords.filter((k) => k === value).length > 1;
+
+        if (isDuplicate) {
+          errorEl.textContent = 'Bu kelime zaten mevcut.';
+          errorEl.classList.remove('hidden');
+          inputEl.classList.add('is-error');
+          return false;
+        }
+
+        return true;
+      };
+
+      const createKeywordInput = (initialValue = '') => {
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'input-group keyword-item';
+        inputWrapper.innerHTML = `<input type="text" class="input-field" placeholder="Aranacak kelime" value="${initialValue}"/>
+    <button type="button" class="btn btn-ghost remove-btn">&times;</button>`;
+
+        // Her bir input için hata mesajı alanı ekle
+        const errorEl = document.createElement('div');
+        errorEl.className = 'keyword-error hidden';
+        inputWrapper.appendChild(errorEl);
+
+        const input = inputWrapper.querySelector('input');
+        const removeBtn = inputWrapper.querySelector('.remove-btn');
+
+        input.addEventListener('input', () => {
+          updateKeywords();
+          validateInput(input);
+        });
+
+        // Sadece birden fazla input varsa silme butonunu göster
+        removeBtn.style.display = searchKeywordsContainer.children.length > 0 ? 'block' : 'none';
+
+        removeBtn.addEventListener('click', () => {
+          inputWrapper.remove();
+          updateKeywords();
+        });
+
+        searchKeywordsContainer.appendChild(inputWrapper);
+        updateKeywords();
+      };
+
+      const validateInput = (inputEl) => {
+        const value = inputEl.value.trim();
+        const errorEl = inputEl.parentElement.querySelector('.keyword-error');
+
+        errorEl.classList.add('hidden');
+        inputEl.classList.remove('is-error');
+
+        if (value.length > 0 && value.length < 2) {
+          errorEl.textContent = 'En az 2 karakter olmalı.';
+          errorEl.classList.remove('hidden');
+          inputEl.classList.add('is-error');
+          return false;
+        }
+
+        const currentKeywords = Array.from(searchKeywordsContainer.querySelectorAll('input')).map(
+          (i) => i.value.trim(),
+        );
+        const isDuplicate = currentKeywords.filter((k) => k === value).length > 1;
+
+        if (isDuplicate) {
+          errorEl.textContent = 'Bu kelime zaten mevcut.';
+          errorEl.classList.remove('hidden');
+          inputEl.classList.add('is-error');
+          return false;
+        }
+
+        return true;
+      };
+
+      const updateKeywords = () => {
+        searchKeywords = Array.from(searchKeywordsContainer.querySelectorAll('input'))
+          .map((input) => input.value.trim())
+          .filter((val) => val.length > 0);
+
+        // Tüm silme butonlarının görünürlüğünü güncelle
+        const removeButtons = searchKeywordsContainer.querySelectorAll('.remove-btn');
+        if (removeButtons.length > 1) {
+          removeButtons.forEach((btn) => (btn.style.display = 'block'));
+        } else {
+          removeButtons.forEach((btn) => (btn.style.display = 'none'));
+        }
+      };
+
+      // ---------- DnD ----------
+      ['dragenter', 'dragover'].forEach((evt) =>
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('is-drag');
+        }),
+      );
+      ['dragleave', 'drop'].forEach((evt) =>
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('is-drag');
+        }),
+      );
+      dropzone.addEventListener('drop', (e) => {
+        const f = e.dataTransfer?.files?.[0];
+        if (f) setFile(f);
+      });
+
+      // ---------- Browse ----------
+      browseBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const f = e.target.files?.[0];
+        if (f) setFile(f);
+      });
+
+      // ------------ Events ------------
+      // Sayfa yüklendiğinde ve "Yeni Kelime Ekle"ye basıldığında render et
+      document.addEventListener('DOMContentLoaded', () => {
+        renderKeywordInputs();
+      });
+
+      addKeywordBtn.addEventListener('click', () => {
+        searchKeywords.push('');
+        renderKeywordInputs();
+      });
+
+      // ---------- Clear ----------
+      clearBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        setFile(null);
+        hideAlert();
+        resetProgress();
+      });
+
+      // ---------- Upload ----------
+      uploadBtn.addEventListener('click', async () => {
+        hideAlert();
+        if (!selectedFile) {
+          showAlert('Lütfen bir dosya seçin.', 'error');
+          return;
+        }
+
+        // Tüm inputları validate et
+        const allInputs = searchKeywordsContainer.querySelectorAll('.keyword-item input');
+        let isValid = true;
+        allInputs.forEach((input) => {
+          if (!validateKeywordInput(input)) {
+            isValid = false;
+          }
+        });
+
+        if (!isValid) {
+          showAlert('Lütfen arama kelimelerindeki hataları düzeltin.', 'error');
+          return;
+        }
+
+        const filteredKeywords = searchKeywords.filter((k) => k.length > 0);
+        if (filteredKeywords.length === 0) {
+          showAlert('Lütfen en az bir arama kelimesi girin.', 'error');
+          return;
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+
+          formData.append('keywords', filteredKeywords.join(','));
+
+          setProgress(20, 'Yükleniyor…');
+
+          const res = await fetch(`${API_URL}/upload`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || 'Upload failed');
+          }
+
+          setProgress(70, 'Processing on server…');
+
+          const data = await res.json();
+          if (!data?.filename) throw new Error('Invalid response');
+
+          resultFilename = data.filename;
+          setProgress(100, 'Completed');
+          showAlert('Dosya başarıyla işlendi.', 'success');
+          downloadBtn.disabled = false;
+        } catch (err) {
+          console.error(err);
+          showAlert(err.message || 'Beklenmedik bir hata oluştu.', 'error');
+          resetProgress();
+        }
+      });
+
+      // ---------- Download ----------
+      downloadBtn.addEventListener('click', async () => {
+        if (!resultFilename) return;
+        window.location.href = `${API_URL}/download/${encodeURIComponent(resultFilename)}`;
+      });
+    </script>
   </body>
 </html>
