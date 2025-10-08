@@ -41,16 +41,15 @@ export async function processExcel(queryFilePath: string, keywordList: string[],
                 const code = row[rh]; // örneğin OEM numarası
 
                 if (code) { // Hata önleme: Boş/null kodu normalize etme
-                    // !!! KRİTİK DÜZELTME: Eşleşme kontrolü için satırdaki OE'yi normalize et !!!
-                    const normalizedCode = normalizeText(code);
+                    
 
-                    if (found.has(normalizedCode)) { // Şimdi doğru anahtarla arama yap
+                    if (code && query_OE_set.has(code)) { // Şimdi doğru anahtarla arama yap
                         // Not: foundMap'e atanmış anahtar normalizedCode değil, query_oe'ydi.
                         // Bu yüzden ya foundMap'i query_oe ile değil normalized OE ile dolduracağız (Daha temiz) 
                         // ya da burada code yerine query_oe'yi kullanacağız (Daha karmaşık).
 
                         // En temiz yol: findOENumbers'ı ve burayı normalize OE ile kullan
-                        row["Found_YV_Codes"] = found.get(normalizedCode)?.join(", ") || "";
+                        row["Found_YV_Codes"] = found.get(code)?.join(", ") || "";
                     }
                 }
             })
@@ -145,7 +144,7 @@ function getQuerySet(jsonData: any[], keywordList: string[]): Set<string> {
         relevantHeaders.forEach(relevantHeader => {
             const value = item[relevantHeader];
             if (value) {
-                oe_set.add(value.toString().trim());
+                oe_set.add(value.toString());
             }
         })
     })
@@ -176,7 +175,7 @@ function findOENumbers(POOL_MAP: Map<string, string[]>, QUERY_SET: Set<string>):
 
     QUERY_SET.forEach(query_oe => {
 
-        const found_YV_array = POOL_MAP.get(normalizeText(query_oe));
+        const found_YV_array = POOL_MAP.get(normalizeText(query_oe.trim()));
         if (found_YV_array) {
             foundMap.set(query_oe, found_YV_array);
         }
