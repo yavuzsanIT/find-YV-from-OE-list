@@ -19,14 +19,14 @@ const RemoverService_1 = require("./RemoverService");
  */
 async function processExcel(queryFilePath, keywordList, originalFilename) {
     try {
-        // 0. Kaynak dosyayı oku ve tut
+        // 0. Sorgu yapılacak dosyayı oku ve tut
         const sourceData = excelToJson(queryFilePath, "Sayfa1");
         const relevantHeaders = getRelevantHeaders(sourceData, keywordList);
-        // 1. Kaynak dosyasını oku 
+        // 1. Kaynak (veri tabanı) dosyasını oku 
         const OE_YV_MAP = (0, helpers_1.getOE_YV_Map)();
-        // 2. Kullanıcının sorgu dosyasını @keywordList ile oku
+        // 2. Kullanıcının sorgu dosyasını @keywordList ile oku ve aranacak OE numaralarını al
         const query_OE_set = getQuerySet(sourceData, keywordList);
-        // 3. OE numaralarını bulma
+        // 3. OE numaralarına karşılık gelen YV kodlarını bul
         const found = findOENumbers(OE_YV_MAP, query_OE_set);
         // Eğer hiçbir eşleşme bulunamazsa 
         if (found.size === 0) {
@@ -36,15 +36,10 @@ async function processExcel(queryFilePath, keywordList, originalFilename) {
         sourceData.map((row) => {
             relevantHeaders.forEach(rh => {
                 const code = row[rh]; // örneğin OEM numarası
-                if (code) { // Hata önleme: Boş/null kodu normalize etme
-                    // !!! KRİTİK DÜZELTME: Eşleşme kontrolü için satırdaki OE'yi normalize et !!!
-                    const normalizedCode = (0, helpers_1.normalizeText)(code);
-                    if (found.has(normalizedCode)) { // Şimdi doğru anahtarla arama yap
-                        // Not: foundMap'e atanmış anahtar normalizedCode değil, query_oe'ydi.
-                        // Bu yüzden ya foundMap'i query_oe ile değil normalized OE ile dolduracağız (Daha temiz) 
-                        // ya da burada code yerine query_oe'yi kullanacağız (Daha karmaşık).
-                        // En temiz yol: findOENumbers'ı ve burayı normalize OE ile kullan
-                        row["Found_YV_Codes"] = found.get(normalizedCode)?.join(", ") || "";
+                if (code) {
+                    // INFO: Araması yapılan OE numaraları DB de arama esnasında normalize edilse de dosyadaki ilgili satırla yeniden eşleştirmek için orijinal haliyle saklanıyor.
+                    if (code && query_OE_set.has(code)) {
+                        row["Found_YV_Codes"] = found.get(code)?.join(", ") || "";
                     }
                 }
             });
@@ -116,7 +111,8 @@ function getQuerySet(jsonData, keywordList) {
         relevantHeaders.forEach(relevantHeader => {
             const value = item[relevantHeader];
             if (value) {
-                oe_set.add(value.toString().trim());
+                // INFO: Araması yapılan OE numaraları DB de arama esnasında normalize edilse de dosyadaki ilgili satırla yeniden eşleştirmek için orijinal haliyle saklanıyor.
+                oe_set.add(value.toString());
             }
         });
     });
@@ -138,8 +134,9 @@ function getQuerySet(jsonData, keywordList) {
 function findOENumbers(POOL_MAP, QUERY_SET) {
     const foundMap = new Map();
     QUERY_SET.forEach(query_oe => {
-        const found_YV_array = POOL_MAP.get((0, helpers_1.normalizeText)(query_oe));
+        const found_YV_array = POOL_MAP.get((0, helpers_1.normalizeText)(query_oe.trim()));
         if (found_YV_array) {
+            // INFO: Araması yapılan OE numaraları DB de arama esnasında normalize edilse de dosyadaki ilgili satırla yeniden eşleştirmek için orijinal haliyle saklanıyor.
             foundMap.set(query_oe, found_YV_array);
         }
     });
