@@ -24,64 +24,32 @@ export async function processExcel(queryFilePath: string, keywordList: string[],
         const OE_YV_MAP = getOE_YV_Map();
 
         // 2. Kullanıcının sorgu dosyasını @keywordList ile oku ve aranacak OE numaralarını al
-        const query_OE_set = getQuerySet(sourceData, keywordList);
+        const QUERY_OE_SET = getQuerySet(sourceData, keywordList);
 
         // 3. OE numaralarına karşılık gelen YV kodlarını bul
-        const found = findOENumbers(OE_YV_MAP, query_OE_set);
+        const FOUND = findOENumbers(OE_YV_MAP, QUERY_OE_SET);
 
         // Eğer hiçbir eşleşme bulunamazsa 
-        if (found.size === 0) {
+        if (FOUND.size === 0) {
             throw new Error("Belirtilen kriterlere uygun sonuç bulunamadı.");
         }
-
 
         // INFO: Gelen dosya üzerine bulunanları ekleme
         sourceData.map((row: any) => {
             relevantHeaders.forEach(rh => {
                 const code = row[rh]; // örneğin OEM numarası
-                
-                if (code) { 
+
+                if (code) {
                     // INFO: Araması yapılan OE numaraları DB de arama esnasında normalize edilse de dosyadaki ilgili satırla yeniden eşleştirmek için orijinal haliyle saklanıyor.
-                    if (code && query_OE_set.has(code)) { 
-                        row["Found_YV_Codes"] = found.get(code)?.join(", ") || "";
+                    if (code && QUERY_OE_SET.has(code)) {
+                        row["Found_YV_Codes"] = FOUND.get(code)?.join(", ") || "";
                     }
                 }
             })
         })
 
         // 4. Sonuçları Excel'e dönüştürme ve kaydetme
-
-        // Sonuç dosya adı oluştur
-        const fileExtension = path.extname(originalFilename);
-        const baseName = path.basename(originalFilename, fileExtension);
-        const newFilename = `${baseName}_Found_YV_Codes_${getDateTimeAsText()}${fileExtension}`;
-
-
-        // Sonuç dosyasının yolunu oluştur
-        const destDir = path.resolve(process.env.OUTPUT_DIR || 'outputs');
-        const sourceDir = path.resolve(process.env.UPLOAD_DIR || '../../uploads');
-
-        // Kaynak-Sonuç dosya klasörlerinin varlığını garantile
-        await fs.mkdir(destDir, { recursive: true });
-        await fs.mkdir(sourceDir, { recursive: true });
-
-        const destPath = path.join(destDir, newFilename);
-
-        // Bulunanları Excel dosyasına yaz
-        //mapToExcel(found, destPath);
-
-        const ws = xlsx.utils.json_to_sheet(sourceData);
-        const wb = xlsx.utils.book_new();
-        xlsx.utils.book_append_sheet(wb, ws, "Updated Data");
-        xlsx.writeFile(wb, destPath);
-
-
-        // Kullanıcının sorgu dosya yolunu sil
-        await fs.unlink(queryFilePath);
-
-        // Sadece son X dosyayı sakla
-        await removeMoreThan_X(destDir, 5);
-        await removeMoreThan_X(sourceDir, 3);
+        const newFilename = await mapToExcel(sourceData, originalFilename, queryFilePath);
 
         return newFilename;
     } catch (error) {
@@ -168,10 +136,26 @@ function findOENumbers(POOL_MAP: Map<string, string[]>, QUERY_SET: Set<string>):
 
     QUERY_SET.forEach(query_oe => {
 
-        const found_YV_array = POOL_MAP.get(normalizeText(query_oe.trim()));
-        if (found_YV_array) {
-            // INFO: Araması yapılan OE numaraları DB de arama esnasında normalize edilse de dosyadaki ilgili satırla yeniden eşleştirmek için orijinal haliyle saklanıyor.
-            foundMap.set(query_oe, found_YV_array);
+        // Virgülle ayrılmış birden fazla OE numarası kontrolü
+        if (query_oe.includes(",")) {
+            const oe_numbers = query_oe.split(",").map(part => part.trim());
+            const found_YV_array: string[] = [];
+            oe_numbers.forEach(oe => {
+                const found_YV_array_oe = POOL_MAP.get(normalizeText(oe.trim()));
+                if (found_YV_array_oe) {
+                    found_YV_array.push(...found_YV_array_oe);
+                }
+            });
+            if (found_YV_array.length > 0) {
+                 
+                foundMap.set(query_oe, Array.from(new Set(found_YV_array))); // Duplicate YV leri önlemek için Set kullanıldı
+            }
+        } else {
+            const found_YV_array = POOL_MAP.get(normalizeText(query_oe.trim()));
+            if (found_YV_array) {
+                // INFO: Araması yapılan OE numaraları DB de arama esnasında normalize edilse de dosyadaki ilgili satırla yeniden eşleştirmek için orijinal haliyle saklanıyor.
+                foundMap.set(query_oe, found_YV_array);
+            }
         }
     });
 
@@ -189,23 +173,38 @@ function findOENumbers(POOL_MAP: Map<string, string[]>, QUERY_SET: Set<string>):
  *   sets of YV numbers that match the OE number.
  * @param outputFilePath - The path to write the Excel file to.
  */
-function mapToExcel(resultMap: Map<string, string[]>, outputFilePath: string) {
-    const rowData: any[] = [];
+async function mapToExcel(sourceData: any[], originalFilename: string, queryFilePath: string): Promise<string> {
+    
+    const fileExtension = path.extname(originalFilename);
+        const baseName = path.basename(originalFilename, fileExtension);
+        const newFilename = `${baseName}_Found_YV_Codes_${getDateTimeAsText()}${fileExtension}`;
 
-    for (const [oe, yvArray] of resultMap.entries()) {
-        const row: any = { OE: oe };
-        let index = 1;
-        for (const yv of yvArray) {
-            row[`YV_${index}`] = yv;
-            index++;
-        }
-        rowData.push(row);
-    }
 
-    const ws = xlsx.utils.json_to_sheet(rowData);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Found OE Numbers");
-    xlsx.writeFile(wb, outputFilePath);
+        // Sonuç dosyasının yolunu oluştur
+        const destDir = path.resolve(process.env.OUTPUT_DIR || 'outputs');
+        const sourceDir = path.resolve(process.env.UPLOAD_DIR || '../../uploads');
+
+        // Kaynak-Sonuç dosya klasörlerinin varlığını garantile
+        await fs.mkdir(destDir, { recursive: true });
+        await fs.mkdir(sourceDir, { recursive: true });
+
+        const destPath = path.join(destDir, newFilename);
+
+        // Bulunanları Excel dosyasına yaz
+        //mapToExcel(found, destPath);
+
+        const ws = xlsx.utils.json_to_sheet(sourceData);
+        const wb = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(wb, ws, "Updated Data");
+        xlsx.writeFile(wb, destPath);
+        // Kullanıcının sorgu dosya yolunu sil
+        await fs.unlink(queryFilePath);
+
+        // Sadece son X dosyayı sakla
+        await removeMoreThan_X(destDir, 5);
+        await removeMoreThan_X(sourceDir, 3);
+
+        return newFilename;
 }
 
 
