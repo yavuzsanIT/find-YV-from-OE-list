@@ -9,6 +9,7 @@ const path_1 = __importDefault(require("path"));
 const xlsx_1 = __importDefault(require("xlsx"));
 const helpers_1 = require("../utils/helpers");
 const RemoverService_1 = require("./RemoverService");
+const GoogleSheetsService_1 = require("./GoogleSheetsService");
 /**
  * Kullanıcı tarafından yüklenen Excel dosyasındaki OE numaralarını,
  * kaynak havuz dosyasında arar ve eşleşen YV-OE çiftlerini yeni bir Excel dosyasına yazar.
@@ -23,11 +24,11 @@ async function processExcel(queryFilePath, keywordList, originalFilename) {
         const sourceData = excelToJson(queryFilePath, "Sayfa1");
         const relevantHeaders = getRelevantHeaders(sourceData, keywordList);
         // 1. Kaynak (veri tabanı) dosyasını oku 
-        const OE_YV_MAP = (0, helpers_1.getOE_YV_Map)();
+        const OE_YV_MAP = await (0, GoogleSheetsService_1.get_OE_YV_MAP)();
         // 2. Kullanıcının sorgu dosyasını @keywordList ile oku ve aranacak OE numaralarını al
         const QUERY_OE_SET = getQuerySet(sourceData, keywordList);
         // 3. OE numaralarına karşılık gelen YV kodlarını bul
-        const FOUND = findOENumbers(OE_YV_MAP, QUERY_OE_SET);
+        const FOUND = await findOENumbers(OE_YV_MAP, QUERY_OE_SET);
         // Eğer hiçbir eşleşme bulunamazsa 
         if (FOUND.size === 0) {
             throw new Error("Belirtilen kriterlere uygun sonuç bulunamadı.");
@@ -110,7 +111,8 @@ function getQuerySet(jsonData, keywordList) {
  * @returns - A map where each key is an OE number and the value is a set
  *   of YV numbers that match the OE number.
  */
-function findOENumbers(POOL_MAP, QUERY_SET) {
+async function findOENumbers(POOL_MAP, QUERY_SET) {
+    const resolvedMap = POOL_MAP;
     const foundMap = new Map();
     QUERY_SET.forEach(query_oe => {
         // Virgülle ayrılmış birden fazla OE numarası kontrolü
@@ -118,7 +120,7 @@ function findOENumbers(POOL_MAP, QUERY_SET) {
             const oe_numbers = query_oe.split(",").map(part => part.trim());
             const found_YV_array = [];
             oe_numbers.forEach(oe => {
-                const found_YV_array_oe = POOL_MAP.get((0, helpers_1.normalizeText)(oe.trim()));
+                const found_YV_array_oe = resolvedMap.get((0, helpers_1.normalizeText)(oe.trim()));
                 if (found_YV_array_oe) {
                     found_YV_array.push(...found_YV_array_oe);
                 }
@@ -128,7 +130,7 @@ function findOENumbers(POOL_MAP, QUERY_SET) {
             }
         }
         else {
-            const found_YV_array = POOL_MAP.get((0, helpers_1.normalizeText)(query_oe.trim()));
+            const found_YV_array = resolvedMap.get((0, helpers_1.normalizeText)(query_oe.trim()));
             if (found_YV_array) {
                 // INFO: Araması yapılan OE numaraları DB de arama esnasında normalize edilse de dosyadaki ilgili satırla yeniden eşleştirmek için orijinal haliyle saklanıyor.
                 foundMap.set(query_oe, found_YV_array);
