@@ -3,9 +3,9 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const sheet = process.env.GOOGLE_SHEETS_API_URL;
-const sheetId = process.env.GOOGLE_SHEETS_ID;
-const sheetName = process.env.GOOGLE_SHEETS_SHEET_NAME;
+const sheet = process.env.VITE_GOOGLE_SHEETS_API_URL || "https://opensheet.elk.sh";
+const sheetId = process.env.VITE_GOOGLE_SHEETS_ID || "1z2iVFbFLiAm4k5a-9eWYz_LERXCqnLKOFwZcYwooHzg";
+const sheetName = process.env.VITE_GOOGLE_SHEETS_SHEET_NAME || "Sheet1";
 
 export async function fetchSheetData() {
     const url = `${sheet}/${sheetId}/${sheetName}`;
