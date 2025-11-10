@@ -8,9 +8,9 @@ exports.get_OE_YV_MAP = get_OE_YV_MAP;
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../.env') });
-const sheet = process.env.GOOGLE_SHEETS_API_URL;
-const sheetId = process.env.GOOGLE_SHEETS_ID;
-const sheetName = process.env.GOOGLE_SHEETS_SHEET_NAME;
+const sheet = process.env.VITE_GOOGLE_SHEETS_API_URL || "https://opensheet.elk.sh";
+const sheetId = process.env.VITE_GOOGLE_SHEETS_ID || "1z2iVFbFLiAm4k5a-9eWYz_LERXCqnLKOFwZcYwooHzg";
+const sheetName = process.env.VITE_GOOGLE_SHEETS_SHEET_NAME || "Sheet1";
 async function fetchSheetData() {
     const url = `${sheet}/${sheetId}/${sheetName}`;
     const response = await fetch(url);
